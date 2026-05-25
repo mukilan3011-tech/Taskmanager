@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TaskFlow</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="brand-icon">◈</span>
+      <span class="brand-name">TaskFlow</span>
+    </div>
+
+    <div class="sidebar-section-label">Views</div>
+    <nav class="sidebar-nav" id="status-nav">
+      <button class="nav-item active" data-filter="all">
+        <span class="nav-icon">▦</span> All Tasks
+        <span class="nav-count" id="count-all">0</span>
+      </button>
+      <button class="nav-item" data-filter="todo">
+        <span class="nav-icon">○</span> To Do
+        <span class="nav-count" id="count-todo">0</span>
+      </button>
+      <button class="nav-item" data-filter="in-progress">
+        <span class="nav-icon">◑</span> In Progress
+        <span class="nav-count" id="count-inprogress">0</span>
+      </button>
+      <button class="nav-item" data-filter="done">
+        <span class="nav-icon">●</span> Done
+        <span class="nav-count" id="count-done">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-section-label">Priority</div>
+    <nav class="sidebar-nav">
+      <button class="nav-item" data-priority="high">
+        <span class="dot dot-high"></span> High
+        <span class="nav-count" id="count-high">0</span>
+      </button>
+      <button class="nav-item" data-priority="medium">
+        <span class="dot dot-medium"></span> Medium
+        <span class="nav-count" id="count-medium">0</span>
+      </button>
+      <button class="nav-item" data-priority="low">
+        <span class="dot dot-low"></span> Low
+        <span class="nav-count" id="count-low">0</span>
+      </button>
+    </nav>
+
+    <div class="sidebar-section-label">Categories</div>
+    <nav class="sidebar-nav" id="category-nav">
+      <!-- Injected by JS -->
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn-clear-done" id="btn-clear-done" title="Delete all completed tasks">
+        ✕ Clear Done
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="page-title" id="page-title">All Tasks</h1>
+        <span class="page-subtitle" id="page-subtitle">Loading…</span>
+      </div>
+      <div class="header-right">
+        <div class="search-wrap">
+          <span class="search-icon">⌕</span>
+          <input type="text" id="search-input" class="search-input" placeholder="Search… (Ctrl+K)" />
+        </div>
+        <div class="sort-wrap">
+          <select id="sort-select" class="sort-select">
+            <option value="-createdAt">Newest First</option>
+            <option value="createdAt">Oldest First</option>
+            <option value="-priority">Priority ↑</option>
+            <option value="title">Title A–Z</option>
+            <option value="dueDate">Due Date</option>
+          </select>
+        </div>
+        <button class="btn-add" id="btn-open-modal">+ New Task</button>
+      </div>
+    </header>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <span class="stat-label">Total</span>
+        <span class="stat-value" id="stat-total">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">To Do</span>
+        <span class="stat-value todo-color" id="stat-todo">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">In Progress</span>
+        <span class="stat-value inprogress-color" id="stat-inprogress">—</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Done</span>
+        <span class="stat-value done-color" id="stat-done">—</span>
+      </div>
+      <div class="stat-progress-wrap">
+        <div class="stat-progress-bar">
+          <div class="stat-progress-fill" id="progress-fill"></div>
+        </div>
+        <span class="stat-progress-label" id="progress-label">0% complete</span>
+      </div>
+    </div>
+
+    <!-- DB Status Banner (shown if DB disconnected) -->
+    <div class="db-banner" id="db-banner" style="display:none;">
+      ⚠️ Database not reachable. Make sure MongoDB is running and restart the server.
+    </div>
+
+    <!-- Task Grid -->
+    <div class="task-grid" id="task-grid"></div>
+
+    <div class="empty-state" id="empty-state" style="display:none;">
+      <div class="empty-icon">◻</div>
+      <p>No tasks found</p>
+      <span>Add a new task to get started</span>
+    </div>
+
+  </main>
+
+  <!-- Task Modal -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">New Task</h2>
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="task-id" />
+
+        <div class="form-group">
+          <label>Task Title <span class="required">*</span></label>
+          <input type="text" id="task-title" class="form-input" placeholder="What needs to be done?" maxlength="200" />
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea id="task-desc" class="form-input form-textarea" placeholder="Optional details…" maxlength="1000" rows="3"></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="task-priority" class="form-input">
+              <option value="low">Low</option>
+              <option value="medium" selected>Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="task-status" class="form-input">
+              <option value="todo" selected>To Do</option>
+              <option value="in-progress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Category</label>
+            <input type="text" id="task-category" class="form-input" placeholder="Dev, Design, Docs…" />
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="task-due" class="form-input" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Tags <span class="label-hint">(comma-separated)</span></label>
+          <input type="text" id="task-tags" class="form-input" placeholder="bug, frontend, urgent" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="btn-cancel">Cancel</button>
+        <button class="btn-save" id="btn-save">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm Modal -->
+  <div class="modal-overlay" id="confirm-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirm</h2>
+        <button class="modal-close" id="confirm-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-msg" class="confirm-msg"></p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel" id="confirm-cancel">Cancel</button>
+        <button class="btn-danger" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
